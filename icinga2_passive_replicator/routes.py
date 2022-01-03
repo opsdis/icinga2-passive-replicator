@@ -1,18 +1,19 @@
+import collections
+import logging
 import os
-from typing import Dict, Any, Union
+import time
+from typing import Dict, Any, Tuple
 
 import uvicorn
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
-
-import logging
 from fastapi_utils.tasks import repeat_every
+from pydantic import BaseSettings
 
 from icinga2_passive_replicator.connection import ConnectionException, SinkException, SourceException
 from icinga2_passive_replicator.containers import Hosts, Services, Host, Service
 from icinga2_passive_replicator.sink_connection import Sink
 from icinga2_passive_replicator.source_connection import Source
-from pydantic import BaseSettings
 
 TEST_PREFIX = ''
 
@@ -46,6 +47,10 @@ class Status:
         self.total_push = 0
         self.failed_scrapes = 0
         self.failed_push = 0
+        self.avg_scrape_time = 0.0
+        self.avg_push_time = 0.0
+        self._process_scrape = collections.deque([0.0, 0.0])
+        self._process_push = collections.deque([0.0, 0.0])
 
     def inc_scrapes(self):
         self.total_scrapes += 1
@@ -68,6 +73,23 @@ class Status:
     def unhealthy(self):
         self.health = False
 
+    def set_scrape_time(self, value: float):
+        self._process_scrape.appendleft(value)
+        self._process_scrape.pop()
+        self.avg_scrape_time = sum(self._process_scrape) / 2
+
+    def set_push_time(self, value: float):
+        self._process_push.appendleft(value)
+        self._process_push.pop()
+        self.avg_push_time = sum(self._process_push) / 2
+
+    def to_dict(self) -> Dict[str, Any]:
+        filtered = {}
+        for key, value in self.__dict__.items():
+            if key[0] != '_':
+                filtered[key] = value
+        return filtered
+
 
 health = Status()
 
@@ -84,7 +106,7 @@ async def healthz():
 
 @app.get("/metrics")
 async def metrics():
-    return health
+    return health.to_dict()
 
 
 @app.on_event("startup")
@@ -92,11 +114,21 @@ async def metrics():
 def process_replication() -> None:
     try:
         for hostgroup in settings.i2pr_source_hostgroups.split(","):
-            logger.info(f"message=\"Collect and push for hostgroup\" hostgroup=\"{hostgroup.strip()}\"")
+            start_time = time.monotonic()
             hosts, services = collect_from_source(hostgroup.strip())
             health.inc_scrapes()
+            process_time = time.monotonic() - start_time
+            health.set_scrape_time(process_time)
+            logger.info(f"message=\"Process scrape\" hostgroup=\"{hostgroup.strip()}\" "
+                        f"response_time={process_time}")
+
+            start_time = time.monotonic()
             push_to_sink(hosts, services)
             health.inc_push()
+            process_time = time.monotonic() - start_time
+            health.set_push_time(process_time)
+            logger.info(f"message=\"Process push\" hostgroup=\"{hostgroup.strip()}\" "
+                        f"response_time={process_time}")
         health.healthy()
     except SinkException:
         health.unhealthy()
@@ -106,7 +138,7 @@ def process_replication() -> None:
         health.inc_failed_scrapes()
 
 
-def collect_from_source(hostgroup: str) -> Union[Hosts, Services]:
+def collect_from_source(hostgroup: str) -> Tuple[Hosts, Services]:
     logger.debug(f"message=\"Collect from source icinga2 instance\"")
 
     source = Source()
@@ -179,8 +211,3 @@ def startup():
     # init(os.getenv('I2PR_TENANT_CONFIG', "./config.yml"))
     uvicorn.run(app, host=os.getenv('I2PR_HOST', "0.0.0.0"), port=os.getenv('I2PR_PORT', 5010))
 
-
-if __name__ == "__main__":
-    logging.config.fileConfig(os.getenv('I2PR_LOGGING_CONFIG', './logging.conf'), disable_existing_loggers=False)
-    # init(os.getenv('I2PR_TENANT_CONFIG', "../tenant_config.yml"))
-    uvicorn.run(app, host="0.0.0.0", port=5010)
