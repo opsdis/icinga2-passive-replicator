@@ -1,12 +1,9 @@
 fastapi==0.70.1
 fastapi-utils==0.2.1
 uvicorn==0.16.0
-requests==2.26.0
+requests==2.27.0
 pydantic~=1.8.2
 python-dotenv==0.19.2
-
 urllib3~=1.26.7
-
-uwsgi==2.0.20
 
 
