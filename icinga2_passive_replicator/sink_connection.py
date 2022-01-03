@@ -108,7 +108,8 @@ class Sink:
             # Create missing service
             create_body = {
                 "templates": [self.service_template],
-                "attrs": {"check_command": self.check_command,
+                "attrs": {"display_name": service.display_name,
+                          "check_command": self.check_command,
                           "enable_active_checks": False,
                           "enable_passive_checks": True,
                           "vars": {DEFAULT_VAR_PASSIVE_REPLICATOR: True},
