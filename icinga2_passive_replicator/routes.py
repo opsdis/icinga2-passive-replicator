@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 import logging
 from fastapi_utils.tasks import repeat_every
 
-from icinga2_passive_replicator.connection import ConnectionExecption, SinkExecption, SourceExecption
+from icinga2_passive_replicator.connection import ConnectionException, SinkException, SourceException
 from icinga2_passive_replicator.containers import Hosts, Services, Host, Service
 from icinga2_passive_replicator.sink_connection import Sink
 from icinga2_passive_replicator.source_connection import Source
@@ -68,16 +68,19 @@ class Status:
     def unhealthy(self):
         self.health = False
 
+
 health = Status()
 
 settings = Settings()
 app = FastAPI()
+
 
 @app.get("/health")
 async def healthz():
     if health.get_health():
         return JSONResponse(status_code=status.HTTP_200_OK, content={"status": "okay"})
     return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content={"status": "failed"})
+
 
 @app.get("/metrics")
 async def metrics():
@@ -95,14 +98,13 @@ def process_replication() -> None:
             push_to_sink(hosts, services)
             health.inc_push()
         health.healthy()
-    #except Exception as err:
-    #    health.health = False
-    except SinkExecption:
+    except SinkException:
         health.unhealthy()
         health.inc_failed_push()
-    except SourceExecption:
+    except SourceException:
         health.unhealthy()
         health.inc_failed_scrapes()
+
 
 def collect_from_source(hostgroup: str):
     logger.debug(f"Collect from source icinga2 instance")
@@ -119,7 +121,7 @@ def collect_from_source(hostgroup: str):
         for item in host_data['results']:
             icinga = create_host(item)
             hosts.add(icinga)
-    except ConnectionExecption as err:
+    except ConnectionException as err:
         logger.warning(f"Received no host data from source Icinga2 - {err}")
         raise err
 
@@ -129,7 +131,7 @@ def collect_from_source(hostgroup: str):
         for item in service_data['results']:
             icinga = create_service(item)
             services.add(icinga)
-    except ConnectionExecption as err:
+    except ConnectionException as err:
         logger.warning(f"Received no service data from source Icinga2 - {err}")
         raise err
 

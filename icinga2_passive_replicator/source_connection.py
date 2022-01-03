@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Dict, Any
 import urllib3
-from icinga2_passive_replicator.connection import ConnectionExecption, SourceExecption
+from icinga2_passive_replicator.connection import ConnectionException, SourceException
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -14,10 +14,6 @@ logger = logging.getLogger(__name__)
 class Source:
 
     def __init__(self):
-        """
-        The constructor takes on single argument that is a config dict
-        :param config:
-        """
         self.user = ''
         self.passwd = ''
         self.host = ''
@@ -43,8 +39,8 @@ class Source:
             }
 
             data_json = self._post(self.url_query_hosts, body)
-        except ConnectionExecption as err:
-            raise SourceExecption(err)
+        except ConnectionException as err:
+            raise SourceException(err)
 
         return data_json
 
@@ -62,8 +58,8 @@ class Source:
             }
 
             data_json = self._post(self.url_query_services, body)
-        except ConnectionExecption as err:
-            raise SourceExecption(err)
+        except ConnectionException as err:
+            raise SourceException(err)
         return data_json
 
     def _post(self, url, body=None) -> Dict[str, Any]:
@@ -82,11 +78,11 @@ class Source:
                                               'response_time': time.monotonic() - start_time})
                     if response.status_code != 200 and response.status_code != 201:
                         logger.warning(f"{response.reason} status {response.status_code}")
-                        raise ConnectionExecption(message=f"Http status {response.status_code}", err=None,
+                        raise ConnectionException(message=f"Http status {response.status_code}", err=None,
                                                   url=self.host)
 
                     return json.loads(response.text)
 
         except requests.exceptions.RequestException as err:
             logger.error(f"Error from connection {err}")
-            raise ConnectionExecption(message=f"Error from connection", err=err, url=self.host)
+            raise ConnectionException(message=f"Error from connection", err=err, url=self.host)

@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Dict, Any
 import urllib3
-from icinga2_passive_replicator.connection import ConnectionExecption, NotExistsExecption, SinkExecption
+from icinga2_passive_replicator.connection import ConnectionException, NotExistsException, SinkException
 from icinga2_passive_replicator.containers import Host, Service, Hosts, Services
 
 DEFAULT_VAR_PASSIVE_REPLICATOR = "i2pr"
@@ -17,10 +17,6 @@ logger = logging.getLogger(__name__)
 class Sink:
 
     def __init__(self):
-        """
-        The constructor takes on single argument that is a config dict
-        :param config:
-        """
         self.user = ''
         self.passwd = ''
         self.host = ''
@@ -53,12 +49,12 @@ class Sink:
                 logger.warning("Not a valid object")
         except Exception as err:
             logger.warning(f"Push to sink failed unexpected with - {err}")
-            raise SinkExecption(err)
+            raise SinkException(err)
 
     def host_passive_check(self, host: Host):
         """
         Execute passive check for host. If host does not exist it will be created
-        throws ConnectionExecption if any connection errors
+        throws ConnectionException if any connection errors
         :param host:
         :return:
 
@@ -72,7 +68,7 @@ class Sink:
 
         try:
             self._post(f"{self.url_passive_check}?host={host.name}", body)
-        except NotExistsExecption as err:
+        except NotExistsException:
             # Create missing host
             create_body = {
                 "templates": [self.host_template],
@@ -105,7 +101,7 @@ class Sink:
 
         try:
             self._post(f"{self.url_passive_check}?service={service.name}", body)
-        except NotExistsExecption as err:
+        except NotExistsException:
             # Create missing service
             create_body = {
                 "templates": [self.service_template],
@@ -144,18 +140,18 @@ class Sink:
                                               'response_time': time.monotonic() - start_time})
                     if response.status_code == 404:
                         logger.warning(f"{response.reason} status {response.status_code}")
-                        raise NotExistsExecption(message=f"Http status {response.status_code}")
+                        raise NotExistsException(message=f"Http status {response.status_code}")
 
                     if response.status_code != 200 and response.status_code != 201:
                         logger.warning(f"{response.reason} status {response.status_code}")
-                        raise ConnectionExecption(message=f"Http status {response.status_code}", err=None,
+                        raise ConnectionException(message=f"Http status {response.status_code}", err=None,
                                                   url=self.host)
 
                     return json.loads(response.text)
 
         except requests.exceptions.RequestException as err:
             logger.error(f"Error from connection {err}")
-            raise ConnectionExecption(message=f"Error from connection", err=err, url=self.host)
+            raise ConnectionException(message=f"Error from connection", err=err, url=self.host)
 
     def _put(self, url, body=None) -> Dict[str, Any]:
         """
@@ -177,15 +173,15 @@ class Sink:
                                               'response_time': time.monotonic() - start_time})
                     if response.status_code == 404:
                         logger.warning(f"{response.reason} status {response.status_code}")
-                        raise NotExistsExecption(message=f"Http status {response.status_code}")
+                        raise NotExistsException(message=f"Http status {response.status_code}")
 
                     if response.status_code != 200 and response.status_code != 201:
                         logger.warning(f"{response.reason} status {response.status_code}")
-                        raise ConnectionExecption(message=f"Http status {response.status_code}", err=None,
+                        raise ConnectionException(message=f"Http status {response.status_code}", err=None,
                                                   url=self.host)
 
                     return json.loads(response.text)
 
         except requests.exceptions.RequestException as err:
             logger.error(f"Error from connection {err}")
-            raise ConnectionExecption(message=f"Error from connection", err=err, url=self.host)
+            raise ConnectionException(message=f"Error from connection", err=err, url=self.host)
