@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Dict, Any
 import urllib3
-from icinga2_passive_replicator.connection import ConnectionExecption, NotExistsExecption
+from icinga2_passive_replicator.connection import ConnectionExecption, NotExistsExecption, SinkExecption
 from icinga2_passive_replicator.containers import Host, Service, Hosts, Services
 
 DEFAULT_VAR_PASSIVE_REPLICATOR = "i2pr"
@@ -53,6 +53,7 @@ class Sink:
                 logger.warning("Not a valid object")
         except Exception as err:
             logger.warning(f"Push to sink failed unexpected with - {err}")
+            raise SinkExecption(err)
 
     def host_passive_check(self, host: Host):
         """

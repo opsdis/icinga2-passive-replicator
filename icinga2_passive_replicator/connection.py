@@ -8,3 +8,13 @@ class ConnectionExecption(Exception):
 class NotExistsExecption(Exception):
     def __init__(self, message: str):
         self.message = message
+
+
+class SourceExecption(Exception):
+    def __init__(self, message: str):
+        self.message = message
+
+
+class SinkExecption(Exception):
+    def __init__(self, message: str):
+        self.message = message

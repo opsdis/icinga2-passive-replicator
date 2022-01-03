@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Dict, Any
 import urllib3
-from icinga2_passive_replicator.connection import ConnectionExecption
+from icinga2_passive_replicator.connection import ConnectionExecption, SourceExecption
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -35,13 +35,16 @@ class Source:
         Get host data
         :return:
         """
-        body = {
-            "type": "Host",
-            "attrs": ["name", "last_check_result", "vars"],
-            "filter": '\"{}\" in host.groups'.format(self.hostgroup)
-        }
+        try:
+            body = {
+                "type": "Host",
+                "attrs": ["name", "last_check_result", "vars"],
+                "filter": '\"{}\" in host.groups'.format(self.hostgroup)
+            }
 
-        data_json = self._post(self.url_query_hosts, body)
+            data_json = self._post(self.url_query_hosts, body)
+        except ConnectionExecption as err:
+            raise SourceExecption(err)
 
         return data_json
 
@@ -50,15 +53,17 @@ class Source:
         Get service data
         :return:
         """
-        body = {
-            "type": "Service",
-            "joins": ["host.name"],
-            "attrs": ["display_name", "last_check_result", "vars"],
-            "filter": '\"{}\" in host.groups'.format(self.hostgroup)
-        }
+        try:
+            body = {
+                "type": "Service",
+                "joins": ["host.name"],
+                "attrs": ["display_name", "last_check_result", "vars"],
+                "filter": '\"{}\" in host.groups'.format(self.hostgroup)
+            }
 
-        data_json = self._post(self.url_query_services, body)
-
+            data_json = self._post(self.url_query_services, body)
+        except ConnectionExecption as err:
+            raise SourceExecption(err)
         return data_json
 
     def _post(self, url, body=None) -> Dict[str, Any]:

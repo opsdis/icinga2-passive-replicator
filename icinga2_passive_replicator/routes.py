@@ -2,11 +2,13 @@ import os
 from typing import Dict, Any
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, status
+from fastapi.responses import JSONResponse
+
 import logging
 from fastapi_utils.tasks import repeat_every
 
-from icinga2_passive_replicator.connection import ConnectionExecption
+from icinga2_passive_replicator.connection import ConnectionExecption, SinkExecption, SourceExecption
 from icinga2_passive_replicator.containers import Hosts, Services, Host, Service
 from icinga2_passive_replicator.sink_connection import Sink
 from icinga2_passive_replicator.source_connection import Source
@@ -37,18 +39,70 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 
+class Status:
+    def __init__(self):
+        self.health = True
+        self.total_scrapes = 0
+        self.total_push = 0
+        self.failed_scrapes = 0
+        self.failed_push = 0
+
+    def inc_scrapes(self):
+        self.total_scrapes += 1
+
+    def inc_failed_scrapes(self):
+        self.failed_scrapes += 1
+
+    def inc_push(self):
+        self.total_push += 1
+
+    def inc_failed_push(self):
+        self.failed_push += 1
+
+    def get_health(self) -> bool:
+        return self.health
+
+    def healthy(self):
+        self.health = True
+
+    def unhealthy(self):
+        self.health = False
+
+health = Status()
+
 settings = Settings()
 app = FastAPI()
+
+@app.get("/health")
+async def healthz():
+    if health.get_health():
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"status": "okay"})
+    return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content={"status": "failed"})
+
+@app.get("/metrics")
+async def metrics():
+    return health
 
 
 @app.on_event("startup")
 @repeat_every(seconds=60)
 def process_replication() -> None:
-    for hostgroup in settings.i2pr_source_hostgroups.split(","):
-        logger.info(f"Collect and push for hostgroup {hostgroup.strip()}")
-        hosts, services = collect_from_source(hostgroup.strip())
-        push_to_sink(hosts, services)
-
+    try:
+        for hostgroup in settings.i2pr_source_hostgroups.split(","):
+            logger.info(f"Collect and push for hostgroup {hostgroup.strip()}")
+            hosts, services = collect_from_source(hostgroup.strip())
+            health.inc_scrapes()
+            push_to_sink(hosts, services)
+            health.inc_push()
+        health.healthy()
+    #except Exception as err:
+    #    health.health = False
+    except SinkExecption:
+        health.unhealthy()
+        health.inc_failed_push()
+    except SourceExecption:
+        health.unhealthy()
+        health.inc_failed_scrapes()
 
 def collect_from_source(hostgroup: str):
     logger.debug(f"Collect from source icinga2 instance")
@@ -67,6 +121,7 @@ def collect_from_source(hostgroup: str):
             hosts.add(icinga)
     except ConnectionExecption as err:
         logger.warning(f"Received no host data from source Icinga2 - {err}")
+        raise err
 
     services = Services()
     try:
@@ -76,6 +131,7 @@ def collect_from_source(hostgroup: str):
             services.add(icinga)
     except ConnectionExecption as err:
         logger.warning(f"Received no service data from source Icinga2 - {err}")
+        raise err
 
     return hosts, services
 
