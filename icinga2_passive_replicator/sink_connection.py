@@ -51,7 +51,7 @@ class Sink:
             logger.warning(f"message=\"Push to sink failed unexpectedly\" error=\"{err}\"")
             raise SinkException(err)
 
-    def host_passive_check(self, host: Host):
+    def host_passive_check(self, host: Host) -> None:
         """
         Execute passive check for host. If host does not exist it will be created
         throws ConnectionException if any connection errors
@@ -86,7 +86,7 @@ class Sink:
             data_json = self._put(f"{self.url_host_create}/{host.name}", create_body)
             logger.info(f"message=\"Created missing host\" host_name={host.name}")
 
-    def service_passive_check(self, service: Service):
+    def service_passive_check(self, service: Service) -> None:
         """
         Execute passive check for service. If service does not exist it will be created
         :param service:

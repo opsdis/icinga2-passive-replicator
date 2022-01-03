@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 import uvicorn
 from fastapi import FastAPI, status
@@ -106,7 +106,7 @@ def process_replication() -> None:
         health.inc_failed_scrapes()
 
 
-def collect_from_source(hostgroup: str):
+def collect_from_source(hostgroup: str) -> Union[Hosts, Services]:
     logger.debug(f"message=\"Collect from source icinga2 instance\"")
 
     source = Source()
@@ -138,7 +138,7 @@ def collect_from_source(hostgroup: str):
     return hosts, services
 
 
-def push_to_sink(hosts: Hosts, services: Services):
+def push_to_sink(hosts: Hosts, services: Services) -> None:
     sink = Sink()
     sink.host = settings.i2pr_sink_host
     sink.user = settings.i2pr_sink_user
