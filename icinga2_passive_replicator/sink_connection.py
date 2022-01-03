@@ -40,10 +40,10 @@ class Sink:
         """
         try:
             if isinstance(hs, Hosts):
-                for name, host in hs.get():
+                for name, host in hs.get().items():
                     self.host_passive_check(host)
             elif isinstance(hs, Services):
-                for name, service in hs.get():
+                for name, service in hs.get().items():
                     self.service_passive_check(service)
             else:
                 logger.warning("Not a valid object")

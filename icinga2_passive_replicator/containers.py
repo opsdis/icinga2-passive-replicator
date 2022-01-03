@@ -30,7 +30,7 @@ class Hosts:
         self._hosts[obj.name] = obj
 
     def get(self) -> Dict[str, Host]:
-        return self._hosts.items()
+        return self._hosts
 
 
 class Services:
@@ -41,4 +41,4 @@ class Services:
         self._services[obj.name] = obj
 
     def get(self) -> Dict[str, Service]:
-        return self._services.items()
+        return self._services
