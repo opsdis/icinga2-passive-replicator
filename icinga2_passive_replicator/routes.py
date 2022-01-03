@@ -42,7 +42,7 @@ app = FastAPI()
 
 
 @app.on_event("startup")
-@repeat_every(seconds=10)
+@repeat_every(seconds=60)
 def process_replication() -> None:
     for hostgroup in settings.i2pr_source_hostgroups.split(","):
         logger.info(f"Collect and push for hostgroup {hostgroup.strip()}")
