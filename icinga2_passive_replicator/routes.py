@@ -92,7 +92,7 @@ async def metrics():
 def process_replication() -> None:
     try:
         for hostgroup in settings.i2pr_source_hostgroups.split(","):
-            logger.info(f"Collect and push for hostgroup {hostgroup.strip()}")
+            logger.info(f"message=\"Collect and push for hostgroup\" hostgroup=\"{hostgroup.strip()}\"")
             hosts, services = collect_from_source(hostgroup.strip())
             health.inc_scrapes()
             push_to_sink(hosts, services)
@@ -107,7 +107,7 @@ def process_replication() -> None:
 
 
 def collect_from_source(hostgroup: str):
-    logger.debug(f"Collect from source icinga2 instance")
+    logger.debug(f"message=\"Collect from source icinga2 instance\"")
 
     source = Source()
     source.host = settings.i2pr_source_host
@@ -122,7 +122,7 @@ def collect_from_source(hostgroup: str):
             icinga = create_host(item)
             hosts.add(icinga)
     except ConnectionException as err:
-        logger.warning(f"Received no host data from source Icinga2 - {err}")
+        logger.warning(f"message=\"Received no host data from source Icinga2\" error=\"{err}\"")
         raise err
 
     services = Services()
@@ -132,7 +132,7 @@ def collect_from_source(hostgroup: str):
             icinga = create_service(item)
             services.add(icinga)
     except ConnectionException as err:
-        logger.warning(f"Received no service data from source Icinga2 - {err}")
+        logger.warning(f"message=\"Received no service data from source Icinga2\" error=\"{err}\"")
         raise err
 
     return hosts, services

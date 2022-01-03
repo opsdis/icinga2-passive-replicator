@@ -74,15 +74,17 @@ class Source:
                                   headers={'Content-Type': 'application/json',
                                            'X-HTTP-Method-Override': 'GET'},
                                   data=json.dumps(body)) as response:
-                    logger.debug(f"request", {'method': 'post', 'url': url, 'status': response.status_code,
-                                              'response_time': time.monotonic() - start_time})
+                    logger.info(f"message=\"Call sink\" host={self.host} method=post "
+                                 f"url={url} status={response.status_code} "
+                                 f"response_time={time.monotonic() - start_time}")
+
                     if response.status_code != 200 and response.status_code != 201:
-                        logger.warning(f"{response.reason} status {response.status_code}")
+                        logger.warning(f"message=\"{response.reason}\" status={response.status_code}")
                         raise ConnectionException(message=f"Http status {response.status_code}", err=None,
                                                   url=self.host)
 
                     return json.loads(response.text)
 
         except requests.exceptions.RequestException as err:
-            logger.error(f"Error from connection {err}")
+            logger.error(f"message=\"Error from connection\" error=\"{err}\"")
             raise ConnectionException(message=f"Error from connection", err=err, url=self.host)

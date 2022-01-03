@@ -46,9 +46,9 @@ class Sink:
                 for name, service in hs.get().items():
                     self.service_passive_check(service)
             else:
-                logger.warning("Not a valid object")
+                logger.warning(f"message=\"Not a valid object\"")
         except Exception as err:
-            logger.warning(f"Push to sink failed unexpected with - {err}")
+            logger.warning(f"message=\"Push to sink failed unexpectedly\" error=\"{err}\"")
             raise SinkException(err)
 
     def host_passive_check(self, host: Host):
@@ -84,7 +84,7 @@ class Sink:
                     create_body['attrs']['vars'][f"{self.vars_prefix}{key}"] = value
 
             data_json = self._put(f"{self.url_host_create}/{host.name}", create_body)
-            logger.info(f"Created missing host {host.name} - {data_json}")
+            logger.info(f"message=\"Created missing host\" host_name={host.name}")
 
     def service_passive_check(self, service: Service):
         """
@@ -118,7 +118,7 @@ class Sink:
                     create_body['attrs']['vars'][f"{self.vars_prefix}{key}"] = value
 
             data_json = self._put(f"{self.url_service_create}/{service.name}", create_body)
-            logger.info(f"Created missing service {service.name} - {data_json}")
+            logger.info(f"message=\"Created missing service\" service_name=\"{service.name}\"")
 
     def _post(self, url, body=None) -> Dict[str, Any]:
         """
@@ -136,21 +136,23 @@ class Sink:
                                   timeout=self.timeout,
                                   headers=self.headers,
                                   data=json.dumps(body)) as response:
-                    logger.debug(f"request", {'method': 'post', 'url': url, 'status': response.status_code,
-                                              'response_time': time.monotonic() - start_time})
+                    logger.info(f"message=\"Call sink\" host={self.host} method=post "
+                                 f"url=\"{url}\" status={response.status_code} "
+                                 f"response_time={time.monotonic() - start_time}")
+
                     if response.status_code == 404:
-                        logger.warning(f"{response.reason} status {response.status_code}")
+                        logger.warning(f"message=\"{response.reason}\" status={response.status_code}")
                         raise NotExistsException(message=f"Http status {response.status_code}")
 
                     if response.status_code != 200 and response.status_code != 201:
-                        logger.warning(f"{response.reason} status {response.status_code}")
+                        logger.warning(f"message=\"{response.reason}\" status={response.status_code}")
                         raise ConnectionException(message=f"Http status {response.status_code}", err=None,
                                                   url=self.host)
 
                     return json.loads(response.text)
 
         except requests.exceptions.RequestException as err:
-            logger.error(f"Error from connection {err}")
+            logger.error(f"message=\"Error from connection\" error=\"{err}\"")
             raise ConnectionException(message=f"Error from connection", err=err, url=self.host)
 
     def _put(self, url, body=None) -> Dict[str, Any]:
@@ -169,19 +171,21 @@ class Sink:
                                  timeout=self.timeout,
                                  headers=self.headers,
                                  data=json.dumps(body)) as response:
-                    logger.debug(f"request", {'method': 'put', 'url': url, 'status': response.status_code,
-                                              'response_time': time.monotonic() - start_time})
+                    logger.info(f"message=\"Call sink\" host={self.host} method=put "
+                                 f"url={url} status= {response.status_code} "
+                                 f"response_time={time.monotonic() - start_time}")
+
                     if response.status_code == 404:
-                        logger.warning(f"{response.reason} status {response.status_code}")
+                        logger.warning(f"message=\"{response.reason}\" status={response.status_code}")
                         raise NotExistsException(message=f"Http status {response.status_code}")
 
                     if response.status_code != 200 and response.status_code != 201:
-                        logger.warning(f"{response.reason} status {response.status_code}")
+                        logger.warning(f"message=\"{response.reason}\" status={response.status_code}")
                         raise ConnectionException(message=f"Http status {response.status_code}", err=None,
                                                   url=self.host)
 
                     return json.loads(response.text)
 
         except requests.exceptions.RequestException as err:
-            logger.error(f"Error from connection {err}")
+            logger.error(f"message=\"Error from connection\" error={err}")
             raise ConnectionException(message=f"Error from connection", err=err, url=self.host)
