@@ -1,0 +1,15 @@
+# Source Icinga2 instance
+SOURCE_HOST="https://localhost:5665"
+SOURCE_USER="root"
+SOURCE_PASSWD="XYZ"
+# All hostgroups, separated with comma, that will be scraped
+SOURCE_HOSTGROUPS="hstgroup1, hostgroup2"
+
+
+# Sink Icinga2 instance
+SINK_HOST="https://localhost:5665"
+SINK_USER="root"
+SINK_PASSWD="xyz"
+# The prefix that will be added to any host and service vars to
+# exclude any conflicts
+SINK_VARS_PREFIX="pr_"
