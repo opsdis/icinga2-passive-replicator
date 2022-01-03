@@ -18,4 +18,18 @@ All existing variables on the object will be created, but with a prefix default 
 Check out the `.example_env` file for configuration options. For the options to take effect please
 rename the file to `.env` or set the options as environment variables.
 
+# Run i2pr
+Edit the `.env` and `logging.conf` files according to your setup. Please checkout `.example_env` for configuration of
+the `.env` file.
 
+
+```bash
+python3 -m venv venv
+. venv/bin/activate
+pip install -r requierments.txt
+python -m icinga2_passive_replicator
+
+```
+
+# Run i2pr as a service
+Checkout the example in `scripts/i2pr.service`
