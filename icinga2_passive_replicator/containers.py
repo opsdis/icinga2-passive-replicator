@@ -1,4 +1,3 @@
-
 from typing import Dict, Any, List
 
 
@@ -27,7 +26,7 @@ class Hosts:
     def __init__(self):
         self._hosts: Dict[str, Host] = {}
 
-    def add(self, obj:Host):
+    def add(self, obj: Host):
         self._hosts[obj.name] = obj
 
     def get(self) -> Dict[str, Host]:
@@ -38,7 +37,7 @@ class Services:
     def __init__(self):
         self._services: Dict[str, Service] = {}
 
-    def add(self, obj:Service):
+    def add(self, obj: Service):
         self._services[obj.name] = obj
 
     def get(self) -> Dict[str, Service]:

@@ -1,15 +1,20 @@
 # Source Icinga2 instance
-SOURCE_HOST="https://localhost:5665"
-SOURCE_USER="root"
-SOURCE_PASSWD="XYZ"
+I2PR_SOURCE_HOST="https://localhost:5665"
+I2PR_SOURCE_USER="root"
+I2PR_SOURCE_PASSWD="xyz"
 # All hostgroups, separated with comma, that will be scraped
-SOURCE_HOSTGROUPS="hstgroup1, hostgroup2"
+I2PR_SOURCE_HOSTGROUPS="all_host_group"
 
 
 # Sink Icinga2 instance
-SINK_HOST="https://localhost:5665"
-SINK_USER="root"
-SINK_PASSWD="xyz"
+I2PR_SINK_HOST="https://localhost:5665"
+I2PR_SINK_USER="root"
+I2PR_SINK_PASSWD="xyz"
 # The prefix that will be added to any host and service vars to
 # exclude any conflicts
-SINK_VARS_PREFIX="pr_"
+I2PR_SINK_VARS_PREFIX="i2pr_"
+# If host or service do not exist, it will be created with the following
+# templates
+I2PR_SINK_HOST_TEMPLATE="generic-host"
+I2PR_SINK_SERVICE_TEMPLATE="generic-service"
+I2PR_SINK_CHECK_COMMAND="dummy"

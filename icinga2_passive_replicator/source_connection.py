@@ -32,13 +32,11 @@ class Source:
 
     def get_host_data(self) -> Dict[str, Any]:
         """
-        Get the meta and performance data for all services on a hostname
-        :param hostname:
+        Get host data
         :return:
         """
         body = {
             "type": "Host",
-            #"joins": ["host.name"],
             "attrs": ["name", "last_check_result", "vars"],
             "filter": '\"{}\" in host.groups'.format(self.hostgroup)
         }
@@ -49,8 +47,7 @@ class Source:
 
     def get_service_data(self) -> Dict[str, Any]:
         """
-        Get the meta and performance data for all services on a hostname
-        :param hostname:
+        Get service data
         :return:
         """
         body = {
@@ -76,17 +73,15 @@ class Source:
                                   headers={'Content-Type': 'application/json',
                                            'X-HTTP-Method-Override': 'GET'},
                                   data=json.dumps(body)) as response:
-
                     logger.debug(f"request", {'method': 'post', 'url': url, 'status': response.status_code,
                                               'response_time': time.monotonic() - start_time})
                     if response.status_code != 200 and response.status_code != 201:
                         logger.warning(f"{response.reason} status {response.status_code}")
-                        raise ConnectionExecption(message=f"Http status {response.status_code}", err=None, url=self.host)
+                        raise ConnectionExecption(message=f"Http status {response.status_code}", err=None,
+                                                  url=self.host)
 
                     return json.loads(response.text)
 
         except requests.exceptions.RequestException as err:
             logger.error(f"Error from connection {err}")
             raise ConnectionExecption(message=f"Error from connection", err=err, url=self.host)
-        #except Exception as err:
-        #    raise ConnectionExecption(message="Connection error", err=err, url=self.host)

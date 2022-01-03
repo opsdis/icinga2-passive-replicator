@@ -1,5 +1,3 @@
-
-
 class ConnectionExecption(Exception):
     def __init__(self, message: str, err: Exception = None, url: str = None):
         self.message = message
