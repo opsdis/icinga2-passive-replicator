@@ -75,8 +75,8 @@ class Source:
                                            'X-HTTP-Method-Override': 'GET'},
                                   data=json.dumps(body)) as response:
                     logger.info(f"message=\"Call sink\" host={self.host} method=post "
-                                 f"url={url} status={response.status_code} "
-                                 f"response_time={time.monotonic() - start_time}")
+                                f"url={url} status={response.status_code} "
+                                f"response_time={time.monotonic() - start_time}")
 
                     if response.status_code != 200 and response.status_code != 201:
                         logger.warning(f"message=\"{response.reason}\" status={response.status_code}")

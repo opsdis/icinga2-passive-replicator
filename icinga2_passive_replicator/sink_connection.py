@@ -83,7 +83,7 @@ class Sink:
                 for key, value in host.vars.items():
                     create_body['attrs']['vars'][f"{self.vars_prefix}{key}"] = value
 
-            data_json = self._put(f"{self.url_host_create}/{host.name}", create_body)
+            self._put(f"{self.url_host_create}/{host.name}", create_body)
             logger.info(f"message=\"Created missing host\" host_name={host.name}")
 
     def service_passive_check(self, service: Service) -> None:
@@ -117,7 +117,7 @@ class Sink:
                 for key, value in service.vars.items():
                     create_body['attrs']['vars'][f"{self.vars_prefix}{key}"] = value
 
-            data_json = self._put(f"{self.url_service_create}/{service.name}", create_body)
+            self._put(f"{self.url_service_create}/{service.name}", create_body)
             logger.info(f"message=\"Created missing service\" service_name=\"{service.name}\"")
 
     def _post(self, url, body=None) -> Dict[str, Any]:
@@ -137,8 +137,8 @@ class Sink:
                                   headers=self.headers,
                                   data=json.dumps(body)) as response:
                     logger.info(f"message=\"Call sink\" host={self.host} method=post "
-                                 f"url=\"{url}\" status={response.status_code} "
-                                 f"response_time={time.monotonic() - start_time}")
+                                f"url=\"{url}\" status={response.status_code} "
+                                f"response_time={time.monotonic() - start_time}")
 
                     if response.status_code == 404:
                         logger.warning(f"message=\"{response.reason}\" status={response.status_code}")
@@ -172,8 +172,8 @@ class Sink:
                                  headers=self.headers,
                                  data=json.dumps(body)) as response:
                     logger.info(f"message=\"Call sink\" host={self.host} method=put "
-                                 f"url={url} status= {response.status_code} "
-                                 f"response_time={time.monotonic() - start_time}")
+                                f"url=\"{url}\" status= {response.status_code} "
+                                f"response_time={time.monotonic() - start_time}")
 
                     if response.status_code == 404:
                         logger.warning(f"message=\"{response.reason}\" status={response.status_code}")
