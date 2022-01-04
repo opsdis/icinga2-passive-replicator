@@ -7,6 +7,12 @@ data for hosts and service from one Icinga2 instance, source, to another instanc
 
 The solution will scrape the source Icinga2 instance on a regular interval of 60 seconds. 
 The scraping is done for all hosts and services that belong to a number of specified hostgroups.
+Which hostgroups to scrape is specified with the environment variable `I2PR_SOURCE_HOSTGROUPS`, e.g.
+
+    I2PR_SOURCE_HOSTGROUPS="Ubuntu, Mysql"
+
+The above will scrape all hosts and services in the hostgroups `Ubuntu` and `Mysql`.
+
 
 If a host or service does not exist in the sink instance it will be created.
 The objects will be created with the with templates. Default for hosts is `generic-host`

@@ -1,15 +1,16 @@
+# This file define the environment variables used by i2pr. The value are the default values.
+
 # Source Icinga2 instance
 I2PR_SOURCE_HOST="https://localhost:5665"
 I2PR_SOURCE_USER="root"
-I2PR_SOURCE_PASSWD="xyz"
+I2PR_SOURCE_PASSWD=""
 # All hostgroups, separated with comma, that will be scraped
-I2PR_SOURCE_HOSTGROUPS="all_host_group"
-
+I2PR_SOURCE_HOSTGROUPS=""
 
 # Sink Icinga2 instance
 I2PR_SINK_HOST="https://localhost:5665"
 I2PR_SINK_USER="root"
-I2PR_SINK_PASSWD="xyz"
+I2PR_SINK_PASSWD=""
 # The prefix that will be added to any host and service vars to
 # exclude any conflicts
 I2PR_SINK_VARS_PREFIX="i2pr_"
@@ -17,4 +18,5 @@ I2PR_SINK_VARS_PREFIX="i2pr_"
 # templates
 I2PR_SINK_HOST_TEMPLATE="generic-host"
 I2PR_SINK_SERVICE_TEMPLATE="generic-service"
+# The check command used for both hosts and services
 I2PR_SINK_CHECK_COMMAND="dummy"
