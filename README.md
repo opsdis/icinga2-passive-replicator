@@ -39,3 +39,10 @@ python -m icinga2_passive_replicator
 
 # Run i2pr as a service
 Checkout the example in `scripts/i2pr.service`
+
+# Monitor i2pr
+The service expose the following endpoint:
+
+- `/health` return http status 200 if okay or 503 if not
+- `metrics` return the internal metrics, default i prometheus format. Using query paramater `format=json` the
+output will be json formatted
