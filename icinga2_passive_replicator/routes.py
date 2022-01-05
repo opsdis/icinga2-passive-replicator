@@ -6,7 +6,7 @@ from typing import Dict, Any, Tuple
 
 import uvicorn
 from fastapi import FastAPI, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi_utils.tasks import repeat_every
 from pydantic import BaseSettings
 
@@ -42,27 +42,30 @@ class Settings(BaseSettings):
 
 class Status:
     def __init__(self):
+
         self.health = True
-        self.total_scrapes = 0
-        self.total_push = 0
-        self.failed_scrapes = 0
-        self.failed_push = 0
-        self.avg_scrape_time = 0.0
-        self.avg_push_time = 0.0
-        self._process_scrape = collections.deque([0.0, 0.0])
-        self._process_push = collections.deque([0.0, 0.0])
+        self.scrapes_total = 0
+        self.push_total = 0
+        self.passive_checks_total = 0
+        self.failed_scrapes_total = 0
+        self.failed_push_total = 0
+        self.scrape_time_seconds_total = 0.0
+        self.push_time_seconds_total = 0.0
 
     def inc_scrapes(self):
-        self.total_scrapes += 1
+        self.scrapes_total += 1
 
     def inc_failed_scrapes(self):
-        self.failed_scrapes += 1
+        self.failed_scrapes_total += 1
 
     def inc_push(self):
-        self.total_push += 1
+        self.push_total += 1
 
     def inc_failed_push(self):
-        self.failed_push += 1
+        self.failed_push_total += 1
+
+    def inc_total_passive_checks(self, value):
+        self.passive_checks_total += value
 
     def get_health(self) -> bool:
         return self.health
@@ -73,23 +76,37 @@ class Status:
     def unhealthy(self):
         self.health = False
 
-    def set_scrape_time(self, value: float):
-        self._process_scrape.appendleft(value)
-        self._process_scrape.pop()
-        self.avg_scrape_time = sum(self._process_scrape) / 2
+    def inc_scrape_time(self, value: float):
+        self.scrape_time_seconds_total += value
 
-    def set_push_time(self, value: float):
-        self._process_push.appendleft(value)
-        self._process_push.pop()
-        self.avg_push_time = sum(self._process_push) / 2
+    def inc_push_time(self, value: float):
+        self.push_time_seconds_total += value
 
     def to_dict(self) -> Dict[str, Any]:
         filtered = {}
         for key, value in self.__dict__.items():
             if key[0] != '_':
-                filtered[key] = value
+                if isinstance(value, bool):
+                    filtered[key] = int(value)
+                else:
+                    filtered[key] = value
+        filtered['avg_passive_checks'] = self.passive_checks_total / self.push_total
+        filtered['avg_scrape_time_seconds'] = self.scrape_time_seconds_total / self.scrapes_total
+        filtered['avg_push_time_seconds'] = self.push_time_seconds_total / self.push_total
         return filtered
 
+    def to_prometheus(self) -> str:
+        new_line = '\n'
+        prom_output = ''
+        for key, value in self.__dict__.items():
+            if key[0] != '_':
+                if isinstance(value, bool):
+                    prom_output += f"{key} {int(value)}{new_line}"
+                else:
+                    prom_output += f"{key} {value}{new_line}"
+        #prom_output += f"avg_scrape_time_seconds {self.scrape_time_seconds_total / self.scrapes_total}{new_line}"
+        #prom_output += f"avg_push_time_seconds {self.push_time_seconds_total / self.push_total}{new_line}"
+        return prom_output
 
 health = Status()
 
@@ -105,12 +122,16 @@ async def healthz():
 
 
 @app.get("/metrics")
-async def metrics():
-    return health.to_dict()
+async def metrics(format: str = 'prometheus'):
+    if format == 'prometheus':
+        return Response(content=health.to_prometheus(), media_type="text/html", status_code=status.HTTP_200_OK)
+    if format == 'json':
+        return JSONResponse(content=health.to_dict(), status_code=status.HTTP_200_OK)
+    return Response(content=health.to_prometheus(), media_type="text/html", status_code=status.HTTP_200_OK)
 
 
 @app.on_event("startup")
-@repeat_every(seconds=60)
+@repeat_every(seconds=10)
 def process_replication() -> None:
     try:
         for hostgroup in settings.i2pr_source_hostgroups.split(","):
@@ -118,17 +139,19 @@ def process_replication() -> None:
             hosts, services = collect_from_source(hostgroup.strip())
             health.inc_scrapes()
             process_time = time.monotonic() - start_time
-            health.set_scrape_time(process_time)
+            health.inc_scrape_time(process_time)
             logger.info(f"message=\"Process scrape\" hostgroup=\"{hostgroup.strip()}\" "
                         f"response_time={process_time}")
 
             start_time = time.monotonic()
-            push_to_sink(hosts, services)
+            total_passive_checks = push_to_sink(hosts, services)
+            health.inc_total_passive_checks(total_passive_checks)
             health.inc_push()
             process_time = time.monotonic() - start_time
-            health.set_push_time(process_time)
+            health.inc_push_time(process_time)
+
             logger.info(f"message=\"Process push\" hostgroup=\"{hostgroup.strip()}\" "
-                        f"response_time={process_time}")
+                        f"total_passive_checks={total_passive_checks} response_time={process_time}")
         health.healthy()
     except SinkException:
         health.unhealthy()
@@ -170,7 +193,7 @@ def collect_from_source(hostgroup: str) -> Tuple[Hosts, Services]:
     return hosts, services
 
 
-def push_to_sink(hosts: Hosts, services: Services) -> None:
+def push_to_sink(hosts: Hosts, services: Services) -> int:
     sink = Sink()
     sink.host = settings.i2pr_sink_host
     sink.user = settings.i2pr_sink_user
@@ -180,8 +203,11 @@ def push_to_sink(hosts: Hosts, services: Services) -> None:
     sink.service_template = settings.i2pr_sink_service_template
     sink.check_command = settings.i2pr_sink_check_command
 
-    sink.push(hosts)
-    sink.push(services)
+    count_passive_checks = sink.push(hosts)
+    count_passive_checks += sink.push(services)
+
+    return \
+        count_passive_checks
 
 
 def create_host(item: Dict[str, Any]) -> Host:
