@@ -13,12 +13,15 @@ Which hostgroups to scrape is specified with the environment variable `I2PR_SOUR
 
 The above will scrape all hosts and services in the hostgroups `Ubuntu` and `Mysql`.
 
-
 If a host or service does not exist in the sink instance it will be created.
 The objects will be created with the with templates. Default for hosts is `generic-host`
 and for services is `generic-service`.
+
 Default check command will be `dummy`.
-Created host and service will always have a variable called `i2pr` set to `true`.
+
+Created host and service will always have a variable called `i2pr` set to `true` and be added to hostgroup(s) 
+defined in the environment variable `I2PR_SINK_HOSTGROUPS`, default is `i2pr`.
+
 All existing variables on the object will be created, but with a prefix default to `i2pr_`.
 
 Check out the `.example_env` file for configuration options. For the options to take effect please
@@ -28,13 +31,11 @@ rename the file to `.env` or set the options as environment variables.
 Edit the `.env` and `logging.conf` files according to your setup. Please checkout `.example_env` for configuration of
 the `.env` file.
 
-
 ```bash
 python3 -m venv venv
 . venv/bin/activate
 pip install -r requierments.txt
 python -m icinga2_passive_replicator
-
 ```
 
 # Run i2pr as a service

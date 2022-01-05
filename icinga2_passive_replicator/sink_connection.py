@@ -23,7 +23,7 @@ import requests
 import json
 import logging
 import time
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 import urllib3
 from icinga2_passive_replicator.connection import ConnectionException, NotExistsException, SinkException
 from icinga2_passive_replicator.containers import Host, Service, Hosts, Services
@@ -49,9 +49,22 @@ class Sink:
         self.host_template = 'generic-host'
         self.service_template = 'generic-service'
         self.check_command = 'dummy'
+        self.hostgroups = ['i2pr']
         self.url_passive_check = self.host + '/v1/actions/process-check-result'
         self.url_host_create = self.host + '/v1/objects/hosts'
         self.url_service_create = self.host + '/v1/objects/services'
+        self.url_hostgroup_create = self.host + '/v1/objects/hostgroups'
+
+    def validate_preconditions(self) -> None:
+        for hostgroup in self.hostgroups:
+
+            create_body = {
+                "attrs": {"display_name": hostgroup}
+            }
+            data, status = self._get(f"{self.url_hostgroup_create}/{hostgroup}")
+            if status != 200:
+                self._put(f"{self.url_hostgroup_create}/{hostgroup}", create_body)
+                logger.info(f"message=\"Created missing hostgroup\" hostgroup={hostgroup}")
 
     def push(self, hs: Any) -> int:
         """
@@ -99,6 +112,7 @@ class Sink:
             create_body = {
                 "templates": [self.host_template],
                 "attrs": {"check_command": self.check_command,
+                          "groups": self.hostgroups,
                           "enable_active_checks": False,
                           "enable_passive_checks": True,
                           "vars": {DEFAULT_VAR_PASSIVE_REPLICATOR: True}
@@ -211,6 +225,31 @@ class Sink:
                                                   url=self.host)
 
                     return json.loads(response.text)
+
+        except requests.exceptions.RequestException as err:
+            logger.error(f"message=\"Error from connection\" error={err}")
+            raise ConnectionException(message=f"Error from connection", err=err, url=self.host)
+
+    def _get(self, url) -> Tuple[Dict[str, Any], int]:
+        """
+        Do a PUT call
+        :param url:
+        :param body:
+        :return:
+        """
+        try:
+            with requests.Session() as session:
+                start_time = time.monotonic()
+                session.auth = (self.user, self.passwd)
+                with session.get(f"{self.host}{url}",
+                                 verify=self.verify,
+                                 timeout=self.timeout,
+                                 headers=self.headers) as response:
+                    logger.info(f"message=\"Call sink\" host={self.host} method=get "
+                                f"url=\"{url}\" status= {response.status_code} "
+                                f"response_time={time.monotonic() - start_time}")
+
+                    return json.loads(response.text), response.status_code
 
         except requests.exceptions.RequestException as err:
             logger.error(f"message=\"Error from connection\" error={err}")

@@ -20,3 +20,6 @@ I2PR_SINK_HOST_TEMPLATE="generic-host"
 I2PR_SINK_SERVICE_TEMPLATE="generic-service"
 # The check command used for both hosts and services
 I2PR_SINK_CHECK_COMMAND="dummy"
+# A string array of hostgroups, separated with comma, that the replicated hosts should belong to.
+# If the hostgroups do not exist they will be created on startup
+I2PR_SINK_HOSTGROUPS="i2pr"

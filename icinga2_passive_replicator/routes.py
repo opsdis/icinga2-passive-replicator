@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     i2pr_sink_host_template = 'generic-host'
     i2pr_sink_service_template = 'generic-service'
     i2pr_sink_check_command = 'dummy'
+    i2pr_sink_hostgroups = 'i2pr'
 
     class Config:
         env_file = ".env"
@@ -150,7 +151,20 @@ async def metrics(format: str = 'prometheus'):
 
 
 @app.on_event("startup")
-@repeat_every(seconds=10)
+def validate_sink_preconditions() -> None:
+    sink = Sink()
+    sink.host = settings.i2pr_sink_host
+    sink.user = settings.i2pr_sink_user
+    sink.passwd = settings.i2pr_sink_passwd
+    sink.host_template = settings.i2pr_sink_host_template
+    sink.service_template = settings.i2pr_sink_service_template
+    sink.hostgroups = [s.strip() for s in settings.i2pr_sink_hostgroups.split(',')]
+
+    sink.validate_preconditions()
+
+
+@app.on_event("startup")
+@repeat_every(seconds=60)
 def process_replication() -> None:
     try:
         for hostgroup in settings.i2pr_source_hostgroups.split(","):
@@ -178,6 +192,10 @@ def process_replication() -> None:
     except SourceException:
         health.unhealthy()
         health.inc_failed_scrapes()
+    except Exception as err:
+        # Catch all and exit - unexpected exception
+        logger.error(f"message=\"Unexpected exception - exit\" error\"{err}\"")
+        exit(-1)
 
 
 def collect_from_source(hostgroup: str) -> Tuple[Hosts, Services]:
@@ -221,6 +239,7 @@ def push_to_sink(hosts: Hosts, services: Services) -> int:
     sink.host_template = settings.i2pr_sink_host_template
     sink.service_template = settings.i2pr_sink_service_template
     sink.check_command = settings.i2pr_sink_check_command
+    sink.hostgroups = [s.strip() for s in settings.i2pr_sink_hostgroups.split(',')]
 
     count_passive_checks = sink.push(hosts)
     count_passive_checks += sink.push(services)
