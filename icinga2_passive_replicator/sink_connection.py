@@ -32,24 +32,29 @@ class Sink:
         self.url_host_create = self.host + '/v1/objects/hosts'
         self.url_service_create = self.host + '/v1/objects/services'
 
-    def push(self, hs: Any):
+    def push(self, hs: Any) -> int:
         """
         Push data to the sink instance
         :param hs:
-        :return:
+        :return: The number of passive checks executed
         """
+        count = 0
         try:
             if isinstance(hs, Hosts):
                 for name, host in hs.get().items():
+                    count += 1
                     self.host_passive_check(host)
             elif isinstance(hs, Services):
                 for name, service in hs.get().items():
+                    count += 1
                     self.service_passive_check(service)
             else:
                 logger.warning(f"message=\"Not a valid object\"")
         except Exception as err:
             logger.warning(f"message=\"Push to sink failed unexpectedly\" error=\"{err}\"")
             raise SinkException(err)
+
+        return count
 
     def host_passive_check(self, host: Host) -> None:
         """
