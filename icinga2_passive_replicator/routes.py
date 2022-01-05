@@ -1,4 +1,3 @@
-import collections
 import logging
 import os
 import time
@@ -104,9 +103,8 @@ class Status:
                     prom_output += f"{key} {int(value)}{new_line}"
                 else:
                     prom_output += f"{key} {value}{new_line}"
-        #prom_output += f"avg_scrape_time_seconds {self.scrape_time_seconds_total / self.scrapes_total}{new_line}"
-        #prom_output += f"avg_push_time_seconds {self.push_time_seconds_total / self.push_total}{new_line}"
         return prom_output
+
 
 health = Status()
 
@@ -236,4 +234,3 @@ def startup():
     logging.config.fileConfig(os.getenv('I2PR_LOGGING_CONFIG', './logging.conf'), disable_existing_loggers=False)
     # init(os.getenv('I2PR_TENANT_CONFIG', "./config.yml"))
     uvicorn.run(app, host=os.getenv('I2PR_HOST', "0.0.0.0"), port=os.getenv('I2PR_PORT', 5010))
-
