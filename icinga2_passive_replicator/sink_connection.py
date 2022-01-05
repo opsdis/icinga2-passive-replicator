@@ -50,10 +50,10 @@ class Sink:
         self.service_template = 'generic-service'
         self.check_command = 'dummy'
         self.hostgroups = ['i2pr']
-        self.url_passive_check = self.host + '/v1/actions/process-check-result'
-        self.url_host_create = self.host + '/v1/objects/hosts'
-        self.url_service_create = self.host + '/v1/objects/services'
-        self.url_hostgroup_create = self.host + '/v1/objects/hostgroups'
+        self._url_passive_check = self.host + '/v1/actions/process-check-result'
+        self._url_host_create = self.host + '/v1/objects/hosts'
+        self._url_service_create = self.host + '/v1/objects/services'
+        self._url_hostgroup_create = self.host + '/v1/objects/hostgroups'
 
     def validate_preconditions(self) -> None:
         for hostgroup in self.hostgroups:
@@ -61,9 +61,9 @@ class Sink:
             create_body = {
                 "attrs": {"display_name": hostgroup}
             }
-            data, status = self._get(f"{self.url_hostgroup_create}/{hostgroup}")
+            data, status = self._get(f"{self._url_hostgroup_create}/{hostgroup}")
             if status != 200:
-                self._put(f"{self.url_hostgroup_create}/{hostgroup}", create_body)
+                self._put(f"{self._url_hostgroup_create}/{hostgroup}", create_body)
                 logger.info(f"message=\"Created missing hostgroup\" hostgroup={hostgroup}")
 
     def push(self, hs: Any) -> int:
@@ -106,7 +106,7 @@ class Sink:
         }
 
         try:
-            self._post(f"{self.url_passive_check}?host={host.name}", body)
+            self._post(f"{self._url_passive_check}?host={host.name}", body)
         except NotExistsException:
             # Create missing host
             create_body = {
@@ -123,7 +123,7 @@ class Sink:
                 for key, value in host.vars.items():
                     create_body['attrs']['vars'][f"{self.vars_prefix}{key}"] = value
 
-            self._put(f"{self.url_host_create}/{host.name}", create_body)
+            self._put(f"{self._url_host_create}/{host.name}", create_body)
             logger.info(f"message=\"Created missing host\" host_name={host.name}")
 
     def service_passive_check(self, service: Service) -> None:
@@ -140,7 +140,7 @@ class Sink:
         }
 
         try:
-            self._post(f"{self.url_passive_check}?service={service.name}", body)
+            self._post(f"{self._url_passive_check}?service={service.name}", body)
         except NotExistsException:
             # Create missing service
             create_body = {
@@ -157,7 +157,7 @@ class Sink:
                 for key, value in service.vars.items():
                     create_body['attrs']['vars'][f"{self.vars_prefix}{key}"] = value
 
-            self._put(f"{self.url_service_create}/{service.name}", create_body)
+            self._put(f"{self._url_service_create}/{service.name}", create_body)
             logger.info(f"message=\"Created missing service\" service_name=\"{service.name}\"")
 
     def _post(self, url, body=None) -> Dict[str, Any]:
@@ -234,7 +234,6 @@ class Sink:
         """
         Do a PUT call
         :param url:
-        :param body:
         :return:
         """
         try:
