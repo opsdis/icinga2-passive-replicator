@@ -251,6 +251,7 @@ def push_to_sink(hosts: Hosts, services: Services) -> int:
 def create_host(item: Dict[str, Any]) -> Host:
     host = Host()
     host.name = f"{TEST_PREFIX}{item['name']}"
+    host.display_name = item['attrs']['display_name']
     host.exit_status = item['attrs']['last_check_result']['exit_status']
     host.performance_data = item['attrs']['last_check_result']['performance_data']
     host.output = item['attrs']['last_check_result']['output']
@@ -261,8 +262,10 @@ def create_host(item: Dict[str, Any]) -> Host:
 def create_service(item: Dict[str, Any]) -> Service:
     service = Service()
     service.host_name = item['joins']['host']['name']
-    service.display_name = item['attrs']['display_name']
+
     service.name = f"{TEST_PREFIX}{item['name']}"
+    service.display_name = item['attrs']['display_name']
+
     service.exit_status = item['attrs']['last_check_result']['exit_status']
     service.performance_data = item['attrs']['last_check_result']['performance_data']
     service.output = item['attrs']['last_check_result']['output']

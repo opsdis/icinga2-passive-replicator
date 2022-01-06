@@ -25,6 +25,7 @@ from typing import Dict, Any, List
 class IcingaObject:
     def __init__(self):
         self.name: str = ''
+        self.display_name = ''
         self.vars: Dict[str, Any] = {}
         self.performance_data: List[str] = []
         self.output: str = ''
@@ -35,7 +36,6 @@ class Service(IcingaObject):
     def __init__(self):
         super().__init__()
         self.host_name = ''
-        self.display_name = ''
 
 
 class Host(IcingaObject):

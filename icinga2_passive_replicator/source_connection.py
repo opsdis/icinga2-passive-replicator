@@ -55,7 +55,7 @@ class Source:
         try:
             body = {
                 "type": "Host",
-                "attrs": ["name", "last_check_result", "vars"],
+                "attrs": ["name", "display_name", "last_check_result", "vars"],
                 "filter": '\"{}\" in host.groups'.format(self.hostgroup)
             }
 
