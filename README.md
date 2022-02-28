@@ -14,7 +14,7 @@ Which hostgroups to scrape is specified with the environment variable `I2PR_SOUR
 The above will scrape all hosts and services in the hostgroups `Ubuntu` and `Mysql`.
 
 If a host or service does not exist in the sink instance it will be created.
-The objects will be created with the with templates. Default for hosts is `generic-host`
+The objects will be created with the templates. Default for hosts is `generic-host`
 and for services is `generic-service`.
 
 Default check command will be `dummy`.
@@ -28,7 +28,7 @@ Check out the `.example_env` file for configuration options. For the options to 
 rename the file to `.env` or set the options as environment variables.
 
 # Run i2pr
-Edit the `.env` and `logging.conf` files according to your setup. Please checkout `.example_env` for configuration of
+Edit the `.env` and `logging.conf` files according to your setup. Please check out `.example_env` for configuration of
 the `.env` file.
 
 ```bash
@@ -39,11 +39,12 @@ python -m icinga2_passive_replicator
 ```
 
 # Run i2pr as a service
-Checkout the example in `scripts/i2pr.service`
+Checkout the example in `scripts/i2pr.service`. The script expect that i2pr is installed in /opt as 
+`/opt/i2pr`.
 
 # Monitor i2pr
 The service expose the following endpoint:
 
 - `/health` return http status 200 if okay or 503 if not
-- `/metrics` return the internal metrics, default i prometheus format. Using query paramater `format=json` the
+- `/metrics` return the internal metrics, default i prometheus format. Using query parameter `format=json` the
 output will be json formatted

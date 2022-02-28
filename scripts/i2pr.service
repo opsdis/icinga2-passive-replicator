@@ -3,7 +3,7 @@ Description=Icinga2 passive replicator
 After=network.target
 
 [Service]
-Environment="I2PR_LOGGING_CONFIG=/opt/central/logging.conf"
+Environment="I2PR_LOGGING_CONFIG=/opt/i2pr/logging.conf"
 Environment="I2PR_PORT=5010"
 Environment="I2PR_HOST=0.0.0.0"
 
