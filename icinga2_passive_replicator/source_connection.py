@@ -84,7 +84,13 @@ class Source:
         return data_json
 
     def _post(self, url, body=None) -> Dict[str, Any]:
-
+        """
+        Do a post request to Icinga source
+        :param url:
+        :param body:
+        :return:
+        """
+        logger.debug(f"message=\"Request source\" body=\"{body}\"")
         try:
             with requests.Session() as session:
                 start_time = time.monotonic()
@@ -95,7 +101,7 @@ class Source:
                                   headers={'Content-Type': 'application/json',
                                            'X-HTTP-Method-Override': 'GET'},
                                   data=json.dumps(body)) as response:
-                    logger.info(f"message=\"Call sink\" host={self.host} method=post "
+                    logger.info(f"message=\"Call source\" host={self.host} method=post "
                                 f"url={url} status={response.status_code} "
                                 f"response_time={time.monotonic() - start_time}")
 
@@ -103,8 +109,13 @@ class Source:
                         logger.warning(f"message=\"{response.reason}\" status={response.status_code}")
                         raise ConnectionException(message=f"Http status {response.status_code}", err=None,
                                                   url=self.host)
-
-                    return json.loads(response.text)
+                    # logger.debug(f"message=\"Response source\" payload=\"{response.text}\"")
+                    try:
+                        return json.loads(response.text)
+                    except Exception as err:
+                        # Remove after debug - just to catch it
+                        logger.warning(f"message=\"Response could not be parsed from json\" error={err}")
+                        return json.loads(response.text)
 
         except requests.exceptions.RequestException as err:
             logger.error(f"message=\"Error from connection\" error=\"{err}\"")

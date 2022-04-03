@@ -42,6 +42,10 @@ logging.config.fileConfig(os.getenv('I2PR_LOGGING_CONFIG', './logging.conf'), di
 logger = logging.getLogger(__name__)
 
 
+class MissingLastCheckResult(Exception):
+    pass
+
+
 class Settings(BaseSettings):
     i2pr_source_host: str = 'https://localhost:5665'
     i2pr_source_user: str = 'root'
@@ -142,10 +146,10 @@ async def healthz():
 
 
 @app.get("/metrics")
-async def metrics(format: str = 'prometheus'):
-    if format == 'prometheus':
+async def metrics(metric_format: str = 'prometheus'):
+    if metric_format == 'prometheus':
         return Response(content=health.to_prometheus(), media_type="text/html", status_code=status.HTTP_200_OK)
-    if format == 'json':
+    if metric_format == 'json':
         return JSONResponse(content=health.to_dict(), status_code=status.HTTP_200_OK)
     return Response(content=health.to_prometheus(), media_type="text/html", status_code=status.HTTP_200_OK)
 
@@ -210,9 +214,19 @@ def collect_from_source(hostgroup: str) -> Tuple[Hosts, Services]:
     hosts = Hosts()
     try:
         host_data = source.get_host_data()
+        # To use when debugging another systems data
+        # with open('cc.json') as json_file:
+        #    host_data = json.load(json_file)
+
+        if 'results' not in host_data:
+            logger.debug(f"message=\"The results attribute is not in host_data\"")
         for item in host_data['results']:
-            icinga = create_host(item)
-            hosts.add(icinga)
+            try:
+                icinga_host = create_host(item)
+            except MissingLastCheckResult:
+                # Do not add host if missing check result
+                continue
+            hosts.add(icinga_host)
     except ConnectionException as err:
         logger.warning(f"message=\"Received no host data from source Icinga2\" error=\"{err}\"")
         raise err
@@ -220,9 +234,17 @@ def collect_from_source(hostgroup: str) -> Tuple[Hosts, Services]:
     services = Services()
     try:
         service_data = source.get_service_data()
+        if 'results' not in service_data:
+            logger.warning(f"message=\"The results attribute is not in service_data\"")
+
         for item in service_data['results']:
-            icinga = create_service(item)
-            services.add(icinga)
+            try:
+                icinga_service = create_service(item)
+            except MissingLastCheckResult:
+                # Do not add service if missing check result
+                continue
+
+            services.add(icinga_service)
     except ConnectionException as err:
         logger.warning(f"message=\"Received no service data from source Icinga2\" error=\"{err}\"")
         raise err
@@ -244,17 +266,30 @@ def push_to_sink(hosts: Hosts, services: Services) -> int:
     count_passive_checks = sink.push(hosts)
     count_passive_checks += sink.push(services)
 
-    return \
-        count_passive_checks
+    return count_passive_checks
 
 
 def create_host(item: Dict[str, Any]) -> Host:
+    logger.debug(f"message=\"Host item\" item=\"{item}\"")
     host = Host()
     host.name = f"{TEST_PREFIX}{item['name']}"
     host.display_name = item['attrs']['display_name']
-    host.exit_status = item['attrs']['last_check_result']['exit_status']
-    host.performance_data = item['attrs']['last_check_result']['performance_data']
-    host.output = item['attrs']['last_check_result']['output']
+    if item['attrs']['last_check_result']:
+        host.exit_status = item['attrs']['last_check_result']['exit_status']
+        # For the passive check API for a host the only allowed values are 0 (UP) or 1 (DOWN)
+        if host.exit_status > 1:
+            logger.info(
+                f"message=\"Invalid host exit status - will set to 1 (DOWN)\" host=\"{host.name}\" "
+                f"exit_status={host.exit_status}")
+            host.exit_status = 1
+
+        host.performance_data = item['attrs']['last_check_result']['performance_data']
+        output = str(item['attrs']['last_check_result']['output'])
+        host.output = output.strip().replace('\n', ' ')
+    else:
+        logger.warning(f"message=\"The host is missing last_check_result\" host=\"{host.name}\"")
+        raise MissingLastCheckResult()
+
     host.vars = item['attrs']['vars']
     return host
 
@@ -265,10 +300,17 @@ def create_service(item: Dict[str, Any]) -> Service:
 
     service.name = f"{TEST_PREFIX}{item['name']}"
     service.display_name = item['attrs']['display_name']
+    if item['attrs']['last_check_result']:
+        service.exit_status = item['attrs']['last_check_result']['exit_status']
+        service.performance_data = item['attrs']['last_check_result']['performance_data']
+        output = str(item['attrs']['last_check_result']['output'])
+        service.output = output.strip().replace('\n', ' ')
+    else:
+        logger.warning(
+            f"message=\"The service is missing last_check_result\" host=\"{service.host_name}\" "
+            f"service=\"{service.name}\"")
+        raise MissingLastCheckResult()
 
-    service.exit_status = item['attrs']['last_check_result']['exit_status']
-    service.performance_data = item['attrs']['last_check_result']['performance_data']
-    service.output = item['attrs']['last_check_result']['output']
     service.vars = item['attrs']['vars']
     return service
 

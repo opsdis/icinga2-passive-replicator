@@ -27,6 +27,12 @@ All existing variables on the object will be created, but with a prefix default 
 Check out the `.example_env` file for configuration options. For the options to take effect please
 rename the file to `.env` or set the options as environment variables.
 
+> If a host/service exists on the source, but have never been executed there will be no state or performance data.
+In this case the host/service will not be replicated until it have been executed for the first time.
+
+> If a host on the source have a state except 0 (UP) or 1 (DOWN), like 2 or 3 the state will on the sink be set 
+to 1. This is due to the passive check API for a host only accept 0 or 1.
+
 # Run i2pr
 Edit the `.env` and `logging.conf` files according to your setup. Please check out `.example_env` for configuration of
 the `.env` file.

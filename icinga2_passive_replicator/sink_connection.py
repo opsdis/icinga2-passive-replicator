@@ -186,6 +186,7 @@ class Sink:
 
                     if response.status_code != 200 and response.status_code != 201:
                         logger.warning(f"message=\"{response.reason}\" status={response.status_code}")
+                        logger.debug(f"message=\"Failed body\" body=\"{body}")
                         raise ConnectionException(message=f"Http status {response.status_code}", err=None,
                                                   url=self.host)
 
