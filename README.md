@@ -48,6 +48,16 @@ python -m icinga2_passive_replicator
 Checkout the example in `scripts/i2pr.service`. The script expect that i2pr is installed in /opt as 
 `/opt/i2pr`.
 
+# Run i2pr as a docker
+
+Build the docker image
+
+    docker build -t icinga2_passive_replicator .
+
+Run the image with mount volumes for configuration
+
+    docker run -v $(pwd)/.env:/app/.env -v $(pwd)/logging.conf:/app/logging.conf icinga2_passive_replicator
+
 # Monitor i2pr
 The service expose the following endpoint:
 
