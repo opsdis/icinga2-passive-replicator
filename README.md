@@ -1,3 +1,5 @@
+[![Python application](https://github.com/opsdis/icinga2-passive-replicator/actions/workflows/python-app.yml/badge.svg)](https://github.com/opsdis/icinga2-passive-replicator/actions/workflows/python-app.yml)
+
 icinga2-passive-replicator
 --------------------------
 
