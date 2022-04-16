@@ -1,4 +1,5 @@
 [![Python application](https://github.com/opsdis/icinga2-passive-replicator/actions/workflows/python-app.yml/badge.svg)](https://github.com/opsdis/icinga2-passive-replicator/actions/workflows/python-app.yml)
+[![PyPI version](https://badge.fury.io/py/icinga2-passive-replicator.svg)](https://badge.fury.io/py/icinga2-passive-replicator)
 
 icinga2-passive-replicator
 --------------------------
